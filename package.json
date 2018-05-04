@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/WaleedHamza/Mysql-Node_App/issues"
   },
-  "homepage": "https://github.com/WaleedHamza/Mysql-Node_App#readme"
+  "homepage": "https://github.com/WaleedHamza/Mysql-Node_App#readme",
+  "dependencies": {
+    "mysql": "^2.15.0"
+  }
 }

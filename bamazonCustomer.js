@@ -2,52 +2,149 @@ const mysql = require('mysql');
 const inquirer = require('inquirer');
 const cTable = require('console.table');
 
-const connection = mysql.createConnection({
-    host: 'localhost', 
-    port: 3306, 
-    user: 'root', 
-    password: '', 
-    database: 'bamazon_db'
-});
+const connection = mysql.createConnection(
+    {host: 'localhost', port: 3306, user: 'root', password: '', database: 'bamazon_db'}
+);
 var inventory = [];
+var totalPrice = [];
+
+
+function start(){
 connection.connect((err) => {
-    if (err) throw err;
+    if (err) 
+        throw err;
     console.log('Welcom to Bamazon!!');
     console.log('\n');
-    // console.log('connected as id : '+ connection.threadId);
-    showInventory(); 
-})
-
-function showInventory(){
-    // var inventory = [];
-
-    var query = connection.query('SELECT * FROM products',(err,response) => {
-        if (err) throw err;
-        for (var i = 0 ; i < response.length ; i++){
-            inventory.push(response[i]);
+ // console.log('connected as id : '+ connection.threadId);
+    showInventory();
+});
+}
+//make a request to the data base and display the iventory //
+function showInventory() {
+    var query = connection.query('SELECT * FROM products', (err, res) => {
+        if (err) 
+            throw err;
+        for (var i = 0; i < res.length; i++) {
+            inventory.push(res[i]);
         }
         console.table(inventory);
-        inquirer.prompt([
-            {
-                type: 'input',
-                message: 'What is the item ID you would like to purchase?',
-                choices:  'number',
-                name: 'purchasedItem'
-            }
-            // {
-            //     type: 'input',
-            //     message: 'How many would you like to purchase?',
-            //     choices: inventory,
-            //     name: 'numOfItems'
-            // }
-        
-        ]).then(response => {
-            if (purchasedItem === (!NaN))
-            console.log('I get here ')
-            // console.log(response);
-        })
+        // invoke the user prompt function//
+        promptUser();
     })
 }
+// prompt user to choose an item & quanity from the inventory table 
+function promptUser() {
+    inquirer
+        .prompt([
+            {
+                name: 'purchasedItem',
+                message: 'What is the item ID you would like to purchase?',
+                type: 'input',
+                validate: (value) => {
+                    if (!isNaN(value) && value < 11 && value > 0) {
+                        return true;
+                    }
+                    console.log(
+                        '\nInvalid Item ID, Please select the item ID you would like to purchase'
+                    );
+                    promptUser();
+                    return false;
+                }
+            }, {
+                name: 'numOfItems',
+                message: 'How many would you like to purchase?',
+                type: 'input',
+                validate: (value) => {
+                    if (!isNaN(value) === true) {
+                        return true;
+                    }
+                    return false;
+                }
+            }
 
+        ])
+        .then(answer => {
+            // console.log('the answers are : '+ answer)
+            // insert the answers into a variables for ease of use //
+            var purchasedItem = answer.purchasedItem;
+            var quanity = answer.numOfItems
+            // query the database with the users input //
+            var query =connection.query("SELECT * FROM products WHERE ? ", [
+                    {
+                        item_id: purchasedItem
+                    }
+                ], (err, res) => {
+                    if (err) 
+                        throw err;
+                        // insert responses into a variables for ease of use //
+                    var id = res[0].item_id;
+                    var itemName = res[0].product_name;
+                    var inStock = res[0].stock
+                    var price = res[0].price;
+                    // quanity checker to ensure the amount of items requested are available instock//
+                    if (quanity > inStock) {
+                        console.log('Only ' + inStock + ' available of ' + itemName);
+                        return false;
+                        showInventory();
+                    }
+                    // display the purchase order details in a readable way//
+                    var currentPrice = price * quanity;
+                    var leftInStock = inStock - quanity;
+                    var tax = currentPrice * .05;
+                    var total = currentPrice + tax;
+                    console.log('\n'+quanity + ' of ' + itemName + ' added to your cart')
+                    console.log('\nUnit price is : $' + price);
+                    console.log('\nEstimated NC Taxes : $' + tax)
+                    console.log('\nYour Total is : $' + total+ '\n\n');
+                    // console.log(leftInStock + ' of ' + itemName + ' left in stock!');
+                    connection.query("UPDATE products SET ? WHERE ?", [
+                        {
+                            stock: leftInStock
+                        }, 
+                        {
+                            item_id:purchasedItem
+                        }],
+                    function(err,data){ 
+                        if(err) throw err; 
+                        else {
+                            continueShopping();
+                         }
+                    });
+                })
+        })
 
+}
 
+function continueShopping() {
+    inquirer
+        .prompt([
+            {
+                type: 'list',
+                name: "keepShopping",
+                message: "Would you like to continue shopping?",
+                choices: [
+                    "YES" , "NO" , "Review Inventory"
+                ],
+            }
+        ])
+        .then((answer) => {
+            switch(answer.keepShopping){
+            case "YES":
+                promptUser();
+            break;
+
+            case "NO":
+                console.log('Thanks, See you soon!\n\n');
+                connection.end();
+
+            case "Review Inventory":
+            console.table(inventory+ '\n\n');
+            promptUser();
+            break;
+
+            default:
+            connection.end();
+                }
+        })
+}
+start();

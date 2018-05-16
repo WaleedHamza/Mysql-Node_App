@@ -15,7 +15,7 @@ connection.connect((err) => {
         throw err;
     console.log('Welcom to Bamazon!!');
     console.log('\n');
- // console.log('connected as id : '+ connection.threadId);
+    console.log('connected as id : '+ connection.threadId);
     showInventory();
 });
 }
@@ -24,6 +24,7 @@ function showInventory() {
     var query = connection.query('SELECT * FROM products', (err, res) => {
         if (err) 
             throw err;
+            inventory = [];
         for (var i = 0; i < res.length; i++) {
             inventory.push(res[i]);
         }
@@ -83,9 +84,9 @@ function promptUser() {
                     var price = res[0].price;
                     // quanity checker to ensure the amount of items requested are available instock//
                     if (quanity > inStock) {
-                        console.log('Only ' + inStock + ' available of ' + itemName);
-                        return false;
+                        console.log('Only ' + inStock + ' available of ' + itemName+ "\n\n");
                         showInventory();
+                        return;
                     }
                     // display the purchase order details in a readable way//
                     var currentPrice = price * quanity;
@@ -96,7 +97,7 @@ function promptUser() {
                     console.log('\nUnit price is : $' + price);
                     console.log('\nEstimated NC Taxes : $' + tax)
                     console.log('\nYour Total is : $' + total+ '\n\n');
-                    // console.log(leftInStock + ' of ' + itemName + ' left in stock!');
+                    console.log(leftInStock + ' of ' + itemName + ' left in stock!');
                     connection.query("UPDATE products SET ? WHERE ?", [
                         {
                             stock: leftInStock
@@ -136,9 +137,10 @@ function continueShopping() {
             case "NO":
                 console.log('Thanks, See you soon!\n\n');
                 connection.end();
+            break;
 
             case "Review Inventory":
-            console.table(inventory+ '\n\n');
+            console.table(inventory , '\n');
             promptUser();
             break;
 

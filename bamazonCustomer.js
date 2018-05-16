@@ -13,9 +13,10 @@ function start(){
 connection.connect((err) => {
     if (err) 
         throw err;
+    console.log('\n');
     console.log('Welcom to Bamazon!!');
     console.log('\n');
-    console.log('connected as id : '+ connection.threadId);
+    // console.log('connected as id : '+ connection.threadId);
     showInventory();
 });
 }
@@ -28,11 +29,14 @@ function showInventory() {
         for (var i = 0; i < res.length; i++) {
             inventory.push(res[i]);
         }
+        console.log('\n');
         console.table(inventory);
+        console.log('\n');
         // invoke the user prompt function//
         promptUser();
     })
 }
+
 // prompt user to choose an item & quanity from the inventory table 
 function promptUser() {
     inquirer
@@ -42,14 +46,13 @@ function promptUser() {
                 message: 'What is the item ID you would like to purchase?',
                 type: 'input',
                 validate: (value) => {
-                    if (!isNaN(value) && value < 11 && value > 0) {
+                    if (!isNaN(value) && value < 11 && value > 0 && value !== "") {
                         return true;
                     }
                     console.log(
-                        '\nInvalid Item ID, Please select the item ID you would like to purchase'
-                    );
-                    promptUser();
-                    return false;
+                        '\nInvalid Item ID, Please select the item ID you would like to purchase');
+                    return;
+                    showInventory();
                 }
             }, {
                 name: 'numOfItems',
@@ -84,7 +87,7 @@ function promptUser() {
                     var price = res[0].price;
                     // quanity checker to ensure the amount of items requested are available instock//
                     if (quanity > inStock) {
-                        console.log('Only ' + inStock + ' available of ' + itemName+ "\n\n");
+                        console.log('\n\nOnly ' + inStock + ' available of ' + itemName+ "\n\n");
                         showInventory();
                         return;
                     }
@@ -97,7 +100,7 @@ function promptUser() {
                     console.log('\nUnit price is : $' + price);
                     console.log('\nEstimated NC Taxes : $' + tax)
                     console.log('\nYour Total is : $' + total+ '\n\n');
-                    console.log(leftInStock + ' of ' + itemName + ' left in stock!');
+                    console.log(leftInStock + ' of ' + itemName + ' left in stock!\n\n');
                     connection.query("UPDATE products SET ? WHERE ?", [
                         {
                             stock: leftInStock
@@ -140,8 +143,7 @@ function continueShopping() {
             break;
 
             case "Review Inventory":
-            console.table(inventory , '\n');
-            promptUser();
+            showInventory();
             break;
 
             default:
